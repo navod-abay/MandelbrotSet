@@ -1,0 +1,4 @@
+*.exe
+*.bmp
+.vscode/
+/thoughts.txt
