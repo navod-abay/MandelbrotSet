@@ -30,9 +30,16 @@ Complex Complex::operator*=(Complex const &other) const
     return *this * other;
 }
 
-Complex Complex::operator+=(Complex const &other) const
-{
-    return *this + other;
+Complex & Complex::operator+=(Complex const &other)
+{   
+    imag += other.imag;
+    real += other.real;
+    return *this;
+}
+
+std::ostream & operator<<(std::ostream & stream, const Complex & value) {
+    stream << value.real << " + "<< value.imag << "i";
+    return stream; 
 }
 
 long mod_square(Complex const & num)
@@ -98,11 +105,13 @@ bool Generator::check_inclusion(Complex const &com_num, float prob)
     int iter_depth = (int) ITER_LIMIT * ((PROB_BIAS - prob) * (PROB_BIAS - prob));
     for (int i = 0; i < iter_depth; i++)
     {
-        zn *= zn;
-        zn += com_num;
-        if(mod_square(zn) > 1)
+        zn = zn * zn;
+        zn = com_num + zn;  
+        if(mod_square(zn) > 4){
             return false;
+        }
     }
+
     return true;
 }
 
@@ -134,22 +143,23 @@ void Generator::create_ouput_file() {
     }
     f << 'B' << 'M';
     int num_bytes = tot_size / 8;
-    unsigned int filesize = 62 + (tot_size * num_bytes);
+    unsigned int filesize = 54 + tot_size * tot_size * 3;
     cout << "tot_size" << tot_size << " num bytes: " << num_bytes << "\tfilesize: " << filesize << endl;
-    unsigned int Header[] = {filesize, 0, 62};
+    unsigned int Header[] = {filesize, 0, 54};
     f.write((char *)Header, 3 * sizeof(int));
-    unsigned int Infoheader[12] = {40, tot_size, tot_size, 0x00010001, 0, 0, 0, 0, 0, 0, 0x00ffffff, 0x00000000};
-    f.write((char *)Infoheader, 12*sizeof(int));
-    unsigned char bit_buffer;
-    for(int j = 0; j < tot_size; j++) {
+    unsigned int Infoheader[10] = {40, tot_size, tot_size, 0x00180001, 0, 0, 0, 0, 0, 0};
+    f.write((char *)Infoheader, 10*sizeof(int));
+    //unsigned char black[3] = {0, 0, 0};
+    //unsigned char white[3] = {255, 255, 255};
+    for(int j = 0; j < tot_size; j++){
         for(int i = 0; i < tot_size;) {
             for(int k = 0; k < 8; k++, i++) {
                 if(inclusion_set[i][j]) {
-                    bit_buffer |= (1<<k);
+                    f.write("~~~", 3);
+                } else {
+                    f.write("000", 3);
                 }
             }
-            f << bit_buffer;
-            bit_buffer = 0;
         }
     }
     /*
