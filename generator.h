@@ -5,10 +5,10 @@
 #define GENERATOR_H
 
 const int START = -2;
-const int END = 1;
+const int END = 2;
 const int ITER_LIMIT  = 10;
 const float PROB_BIAS = 1.7;
-const int INIT_STEP_SIZE = 512;
+const int INIT_STEP_SIZE = 64;
 
 class Complex
 {
@@ -34,6 +34,7 @@ class Generator
 private:
     int start;
     int num_rec;
+    int cur_rec;
     Complex **plane;
     bool **inclusion_set;
     unsigned int tot_size;
@@ -42,7 +43,7 @@ private:
     static bool check_inclusion(Complex const & com_num, float prob);
     
 public:
-    void run_first_iter(int block_size);
+    void runIter(int block_size, int start);
     void create_ouput_file();
     Generator(int num_rec);
     ~Generator();

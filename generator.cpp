@@ -120,15 +120,25 @@ void Generator::convolution() {
 }
 
 void Generator::run() {
-    int block_size = 2 ^ num_rec;
+    int block_size = pow(2, num_rec);
+        runIter(block_size, 0);
+    cur_rec = num_rec - 1;
+    int start = pow(2, cur_rec);
+    do
+    {
+        runIter(block_size, 0 + start);
+        start  = 2;    
+        block_size /= 2;
+        cur_rec--;
+    } while (block_size > 0);
+    
 
 }
 
-void Generator::run_first_iter(int block_size) {
+void Generator::runIter(int block_size, int start) {
     for(int i= 0; i < tot_size; i+= block_size) {
         for(int j = 0; j < tot_size; j += block_size) {
-    cout << "Checking inclusion of " << plane[i][j].Real() << " + " << plane[i][j].Imaginary() << "i" << endl;
-
+            cout << "Checking inclusion of " << plane[i][j].Real() << " + " << plane[i][j].Imaginary() << "i" << endl;
             inclusion_set[i][j] = check_inclusion(plane[i][j], 0.7);
         }
     }

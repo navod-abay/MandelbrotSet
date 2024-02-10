@@ -2,8 +2,8 @@
 #include"generator.h"
 
 int main() {
-    Generator g1(0);
-    g1.run_first_iter(1);
+    Generator g1(3);
+    g1.run();
     g1.create_ouput_file();
     return 0;
 }
