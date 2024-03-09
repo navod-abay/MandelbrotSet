@@ -2,3 +2,4 @@
 *.bmp
 .vscode/
 /thoughts.txt
+*.log

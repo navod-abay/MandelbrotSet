@@ -1,12 +1,13 @@
 #include<new>
 #include<iostream>
+#include<fstream>
 
 #ifndef GENERATOR_H
 #define GENERATOR_H
 
 const int START = -2;
 const int END = 2;
-const int ITER_LIMIT  = 10;
+const int ITER_LIMIT  = 1000;
 const float PROB_BIAS = 1.7;
 const int INIT_STEP_SIZE = 64;
 
@@ -38,12 +39,15 @@ private:
     Complex **plane;
     bool **inclusion_set;
     unsigned int tot_size;
+    float ** probablities;
+    std::ofstream otp;
 
     static void convolution();
     static bool check_inclusion(Complex const & com_num, float prob);
     
 public:
     void runIter(int block_size, int start);
+    void runIter(int block_size);
     void create_ouput_file();
     Generator(int num_rec);
     ~Generator();

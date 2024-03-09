@@ -64,13 +64,15 @@ double Complex::Imaginary() const {
 
 Generator::Generator(int num_rec)
 {
+    otp.open("Generator.log", ios::out);
     this->num_rec = num_rec;
     tot_size = INIT_STEP_SIZE * pow(2, num_rec);
     plane = new Complex* [tot_size];
     inclusion_set = new bool *[tot_size];
     double x_s = START;
     double min_step = ((double)(END - START)) / tot_size;
-    cout << min_step << endl;
+    cout << "min_step: " << min_step << endl;
+    cout << "Tot Size: " << tot_size << endl;
     for (int i = 0; i < tot_size; i++)
     {
         double y_s = START;
@@ -121,29 +123,55 @@ void Generator::convolution() {
 
 void Generator::run() {
     int block_size = pow(2, num_rec);
-        runIter(block_size, 0);
+    otp << "Block Size: " << block_size << ", start: "  << 0 << endl;
+
+    runIter(block_size);
     cur_rec = num_rec - 1;
     int start = pow(2, cur_rec);
     do
     {
-        runIter(block_size, 0 + start);
-        start  = 2;    
+        otp << "Block Size: " << block_size << ", start: " << start << endl;
+        // cin.get();
+        runIter(block_size, start);
+        start  /= 2;    
         block_size /= 2;
         cur_rec--;
-    } while (block_size > 0);
+    } while (block_size > 1);
     
 
 }
 
 void Generator::runIter(int block_size, int start) {
     for(int i= 0; i < tot_size; i+= block_size) {
-        for(int j = 0; j < tot_size; j += block_size) {
-            cout << "Checking inclusion of " << plane[i][j].Real() << " + " << plane[i][j].Imaginary() << "i" << endl;
+        for(int j = start; j < tot_size; j += block_size) {
+            otp << "Checking inclusion of " << i << " + " << j << "i" << endl;
             inclusion_set[i][j] = check_inclusion(plane[i][j], 0.7);
         }
     }
-    cout << "First iteration done" << endl;
+    for(int i= start; i < tot_size; i+= block_size) {
+        for(int j = 0; j < tot_size; j += block_size ) {
+            otp << "Checking inclusion of " << i << " + " << j << "i" << endl;
+            inclusion_set[i][j] = check_inclusion(plane[i][j], 0.7);
+        }
+    }
+    for(int i= start; i < tot_size; i+= block_size) {
+        for(int j = start; j < tot_size; j += block_size ) {
+            otp << "Checking inclusion of " << i << " + " << j << "i" << endl;
+            inclusion_set[i][j] = check_inclusion(plane[i][j], 0.7);
+        }    
+    }
 }
+
+void Generator::runIter(int block_size) {
+    for(int i= 0; i < tot_size; i+= block_size) {
+        for(int j = 0; j < tot_size; j += block_size) {
+            otp << "Checking inclusion of " << i << " + " << j << "i" << endl;
+            inclusion_set[i][j] = check_inclusion(plane[i][j], 0.7);
+        }
+    }
+}
+
+
 
 void Generator::create_ouput_file() {
     ofstream f;
@@ -172,14 +200,5 @@ void Generator::create_ouput_file() {
             }
         }
     }
-    /*
-   for(int i = 0; i < tot_size; i++) {
-        for(int j = 0; j < tot_size; j++) {
-            if(inclusion_set[i][j]) {
-
-            }
-        }
-   }
-   */
     f.close();
 }
