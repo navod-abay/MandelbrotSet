@@ -3,6 +3,7 @@
 #include "generator.h"
 using namespace std;
 
+
 Complex::Complex(double x, double y)
 {
     real = x;
@@ -64,11 +65,13 @@ double Complex::Imaginary() const {
 
 Generator::Generator(int num_rec)
 {
+    num_skips = 0;
     otp.open("Generator.log", ios::out);
+    convolution_file.open("Convolutionfile.csv", ios::out);
     this->num_rec = num_rec;
     tot_size = INIT_STEP_SIZE * pow(2, num_rec);
     plane = new Complex* [tot_size];
-    inclusion_set = new bool *[tot_size];
+    inclusion_set = new short *[tot_size];
     double x_s = START;
     double min_step = ((double)(END - START)) / tot_size;
     cout << "min_step: " << min_step << endl;
@@ -77,7 +80,7 @@ Generator::Generator(int num_rec)
     {
         double y_s = START;
         plane[i] = new Complex[tot_size];
-        inclusion_set[i] = new bool[tot_size];
+        inclusion_set[i] = new short[tot_size];
         for (int j = 0; j < tot_size; j++)
         {   
             // cout << x_s << " " << y_s << endl;
@@ -91,6 +94,7 @@ Generator::Generator(int num_rec)
 
 Generator::~Generator()
 {
+    cout << num_skips;
      for (int i = 0; i < tot_size; i++)
     {
         delete[] plane[i];
@@ -98,27 +102,71 @@ Generator::~Generator()
     }
     delete[] plane;
     delete[] inclusion_set;
+    otp.close();
+    convolution_file.close();
 }
 
 
-bool Generator::check_inclusion(Complex const &com_num, float prob)
+short Generator::check_inclusion(Complex const &com_num, short prob)
 {
+    if(prob == 128 || prob == -128) {
+        this->num_skips++;
+        return prob;
+    }
     Complex zn = com_num;
-    int iter_depth = (int) ITER_LIMIT * ((PROB_BIAS - prob) * (PROB_BIAS - prob));
+    int iter_depth = ITER_LIMIT;
     for (int i = 0; i < iter_depth; i++)
     {
         zn = zn * zn;
         zn = com_num + zn;  
         if(mod_square(zn) > 4){
-            return false;
+            return -128;
         }
     }
 
-    return true;
+    return 128;
 }
 
-void Generator::convolution() {
+void Generator::convolutionIter(int block_size){
+    short prob;
+    for(int i = 0; i < tot_size; i += block_size) {
+            for(int j = 0; j < tot_size; j += block_size) {
+                inclusion_set[i][j] = convolutionSingleCell(i, j, block_size);
+                convolution_file << prob << "," ;
+        }
+            convolution_file << endl;
+        }
+        convolution_file << endl << endl;
+}
 
+
+short Generator::convolutionSingleCell(int x, int y, int block_size) const {
+    short num_included = 0;
+    int CONVO_BLOCK_SIZE = INIT_CONVO_BLOCK_SIZE + (num_rec - cur_rec);
+    if(x < block_size * CONVO_BLOCK_SIZE || x >= tot_size - block_size * CONVO_BLOCK_SIZE )
+        return 0;
+    if(y < block_size * CONVO_BLOCK_SIZE || y >= tot_size - block_size * CONVO_BLOCK_SIZE )
+        return 0;
+    for (int i = x - block_size * CONVO_BLOCK_SIZE; i < x + block_size * CONVO_BLOCK_SIZE; i += block_size) {
+        for (int j = y - block_size * CONVO_BLOCK_SIZE; j < y + block_size * CONVO_BLOCK_SIZE; j += block_size) {
+            if(inclusion_set[i][j] > 0) 
+                num_included++;
+        }
+    }
+    if(inclusion_set[x][y] > 0) {
+        if(num_included == CONVO_BLOCK_SIZE * CONVO_BLOCK_SIZE) {
+            return 128;
+        } else {
+            return 1;
+        }
+    } else {
+        if(num_included == 0) {
+            return -128;
+        } else {
+            return -1;
+        }
+    }
+    return num_included;
 }
 
 void Generator::run() {
@@ -126,11 +174,14 @@ void Generator::run() {
     otp << "Block Size: " << block_size << ", start: "  << 0 << endl;
 
     runIter(block_size);
+
     cur_rec = num_rec - 1;
     int start = pow(2, cur_rec);
     do
     {
         otp << "Block Size: " << block_size << ", start: " << start << endl;
+        cout << "cur_rec: " << cur_rec << "\tnum_rec: " << num_rec << endl; 
+        convolutionIter(block_size);
         // cin.get();
         runIter(block_size, start);
         start  /= 2;    
@@ -141,24 +192,33 @@ void Generator::run() {
 
 }
 
-void Generator::runIter(int block_size, int start) {
+void Generator::runIter(const int block_size,const  int start) {
+    int k = 0, l = 0;
     for(int i= 0; i < tot_size; i+= block_size) {
         for(int j = start; j < tot_size; j += block_size) {
             otp << "Checking inclusion of " << i << " + " << j << "i" << endl;
-            inclusion_set[i][j] = check_inclusion(plane[i][j], 0.7);
+            inclusion_set[i][j] = check_inclusion(plane[i][j], inclusion_set[i][k]);
+            k += block_size;
         }
+        k = 0;
     }
+    k = 0;
     for(int i= start; i < tot_size; i+= block_size) {
         for(int j = 0; j < tot_size; j += block_size ) {
             otp << "Checking inclusion of " << i << " + " << j << "i" << endl;
-            inclusion_set[i][j] = check_inclusion(plane[i][j], 0.7);
+            inclusion_set[i][j] = check_inclusion(plane[i][j], inclusion_set[k][j]);
         }
+        k += block_size;
     }
+    k = 0;
     for(int i= start; i < tot_size; i+= block_size) {
         for(int j = start; j < tot_size; j += block_size ) {
             otp << "Checking inclusion of " << i << " + " << j << "i" << endl;
-            inclusion_set[i][j] = check_inclusion(plane[i][j], 0.7);
+            inclusion_set[i][j] = check_inclusion(plane[i][j], inclusion_set[k][l]);
+            l += block_size;
         }    
+        k += block_size;
+        l = start;
     }
 }
 
@@ -192,10 +252,10 @@ void Generator::create_ouput_file() {
     for(int j = 0; j < tot_size; j++){
         for(int i = 0; i < tot_size;) {
             for(int k = 0; k < 8; k++, i++) {
-                if(inclusion_set[i][j]) {
-                    f.write("~~~", 3);
+                if(inclusion_set[i][j] > 0) {
+                    f.write("ÿÿÿ", 3);
                 } else {
-                    f.write("000", 3);
+                    f.write("", 3);
                 }
             }
         }

@@ -7,9 +7,9 @@
 
 const int START = -2;
 const int END = 2;
-const int ITER_LIMIT  = 1000;
-const float PROB_BIAS = 1.7;
+const int ITER_LIMIT  = 500;
 const int INIT_STEP_SIZE = 64;
+const int INIT_CONVO_BLOCK_SIZE = 4;
 
 class Complex
 {
@@ -33,17 +33,20 @@ public:
 class Generator
 {
 private:
+    int num_skips;
     int start;
     int num_rec;
     int cur_rec;
     Complex **plane;
-    bool **inclusion_set;
+    short **inclusion_set;
     unsigned int tot_size;
     float ** probablities;
     std::ofstream otp;
+    std::ofstream convolution_file;
 
-    static void convolution();
-    static bool check_inclusion(Complex const & com_num, float prob);
+    void convolutionIter(int block_size);
+    short check_inclusion(Complex const & com_num, short prob);
+    short convolutionSingleCell(int x, int y, int block_size) const;
     
 public:
     void runIter(int block_size, int start);
