@@ -10,6 +10,10 @@ const int END = 2;
 const int ITER_LIMIT  = 500;
 const int INIT_STEP_SIZE = 64;
 const int INIT_CONVO_BLOCK_SIZE = 4;
+const int x_start = -2;
+const int x_end = 1;
+const int y_start = -1;
+const int y_end = 1;
 
 class Complex
 {
@@ -39,8 +43,8 @@ private:
     int cur_rec;
     Complex **plane;
     short **inclusion_set;
-    unsigned int tot_size;
-    float ** probablities;
+    unsigned int x_size;
+    unsigned int y_size;
     std::ofstream otp;
     std::ofstream convolution_file;
 
