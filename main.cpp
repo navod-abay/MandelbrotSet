@@ -8,6 +8,7 @@ int main() {
     auto start = chrono::high_resolution_clock::now();
     Generator g1(7);
     g1.run();
+    g1.mapColours();
     g1.create_ouput_file();
     auto stop = chrono::high_resolution_clock::now();
     auto duration = chrono::duration_cast<chrono::seconds>(stop - start);
