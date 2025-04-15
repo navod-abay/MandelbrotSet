@@ -5,3 +5,5 @@
 *.log
 *.txt
 *.csv
+*.png
+*.ipynb
